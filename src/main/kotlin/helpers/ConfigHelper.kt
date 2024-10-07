@@ -20,4 +20,7 @@ object ConfigHelper {
     fun getProperty(key: String): String? {
         return properties.getProperty(key)
     }
+
+    var token = ConfigHelper.getProperty("bot.token")
+    ?: throw IllegalArgumentException("Токен бота не найден в конфигурационном файле.")
 }
