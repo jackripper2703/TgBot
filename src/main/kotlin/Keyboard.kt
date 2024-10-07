@@ -4,61 +4,80 @@ import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 
 object Keyboards {
-    // Главное меню = main
-    val keyboard00 = InlineKeyboardMarkup.create(
-        listOf(
-            listOf(InlineKeyboardButton.CallbackData("Написать в чат через 5 минут", "chat")),
-            listOf(InlineKeyboardButton.CallbackData("Мероприятия", "events")),
-            listOf(InlineKeyboardButton.CallbackData("Список желаний", "wishList")),
-            listOf(InlineKeyboardButton.CallbackData("Раздел голосования", "vote")),
-            listOf(InlineKeyboardButton.CallbackData("Запуск тайного Санты", "secretSanta")),
-        )
-    )
-    // Мероприятия = events
-    val keyboard01 = InlineKeyboardMarkup.create(
-        listOf(
-            listOf(InlineKeyboardButton.CallbackData("Актуальные мероприятия", "events_active")),
-            listOf(InlineKeyboardButton.CallbackData("Создать новое мероприятие", "events_create")),
-            listOf(InlineKeyboardButton.CallbackData("Отменить мероприятие", "events_cancel")),
-            listOf(InlineKeyboardButton.CallbackData("Главное меню", "main")),
-        )
-    )
-    // Список желаний = wishList
-    val keyboard02 = InlineKeyboardMarkup.create(
-        listOf(
-            listOf(InlineKeyboardButton.CallbackData("Новое желание", "wishList_create")),
-            listOf(InlineKeyboardButton.CallbackData("Список желаний", "wishList_list")),
-            listOf(InlineKeyboardButton.CallbackData("Удалить желание", "wishList_delete")),
-            listOf(InlineKeyboardButton.CallbackData("Желание других участников", "wishList_other")),
-            listOf(InlineKeyboardButton.CallbackData("Главное меню", "main")),
-        )
-    )
-    // Запуск голосования = vote
-    val keyboard03 = InlineKeyboardMarkup.create(
-            listOf(InlineKeyboardButton.CallbackData("Создать голосование", "vote_create")),
-            listOf(InlineKeyboardButton.CallbackData("Главное меню", "main")),
+    /*
+    1. Удаление будет реализовываться через сущности в списках
+    2. Нужно разобраться, как создаются динамичные списки, например список участников тайного санта
+    3. Голосовалка будет приходить с постом о мероприятии
+     */
 
-    )
-    // Завершить голосования = vote
-    val keyboard030 = InlineKeyboardMarkup.create(
-            listOf(InlineKeyboardButton.CallbackData("Закончить голосование", "vote_finish")),
-            listOf(InlineKeyboardButton.CallbackData("Главное меню", "main")),
+    val buttonMain = InlineKeyboardButton.CallbackData("Главное меню", "keyboardMain")
+    
+    val buttonEvents = InlineKeyboardButton.CallbackData("Мероприятия", "events")
+    val buttonEventsList = InlineKeyboardButton.CallbackData("Список мероприятий", "eventsList")
+    val buttonEventsCreate = InlineKeyboardButton.CallbackData("Создать новое мероприятие", "eventCreate")
+    val buttonEventCreateDate = InlineKeyboardButton.CallbackData("12.12.2020", "eventDate")
+    
+    val buttonSecretSanta = InlineKeyboardButton.CallbackData("Тайный Санта", "secretSanta")
+    val buttonSecretSantaRegister = InlineKeyboardButton.CallbackData("Участвовать", "secretSantaRegister")
+    val buttonSecretSantaList = InlineKeyboardButton.CallbackData("Показать список участников", "secretSantaList")
+    val buttonSecretSantaStart = InlineKeyboardButton.CallbackData("Запуск рапределения", "secretSantaStart")
+    val buttonSecretSantaWho = InlineKeyboardButton.CallbackData("Чей я тайный санты?", "secretSantaWho")
 
-        )
-    // Запуск тайного Санты = secretSanta
-    val keyboard04 = InlineKeyboardMarkup.create(
+    val buttonWishList = InlineKeyboardButton.CallbackData("Желания", "wishList")
+    val buttonWishListCreate = InlineKeyboardButton.CallbackData("Новое желание", "wishListCreate")
+    val buttonWishListList = InlineKeyboardButton.CallbackData("Список желаний", "wishListList")
+    val buttonWishListOther = InlineKeyboardButton.CallbackData("Желание других участников", "wishListOther")
+
+    val keyboardBack = InlineKeyboardMarkup.create(
         listOf(
-            listOf(InlineKeyboardButton.CallbackData("Участвовать", "secretSanta_register")),
-            listOf(InlineKeyboardButton.CallbackData("Показать список участников", "secretSanta_list")),
-            listOf(InlineKeyboardButton.CallbackData("Запуск рапределения", "secretSanta_start")),
-            listOf(InlineKeyboardButton.CallbackData("Главное меню", "main")),
+            listOf(buttonMain),
         )
     )
-    // Запуск тайного Санты = secretSanta (Запущенное мероприятие)
-    val keyboard040 = InlineKeyboardMarkup.create(
+
+    val keyboardMain = InlineKeyboardMarkup.create(
         listOf(
-            listOf(InlineKeyboardButton.CallbackData("Чей я тайный санты?", "secretSanta_who")),
-            listOf(InlineKeyboardButton.CallbackData("Главное меню", "main")),
+            listOf(buttonEvents),
+            listOf(buttonSecretSanta),
+            listOf(buttonWishList),
+        )
+    )
+
+    val keyboardEvents = InlineKeyboardMarkup.create(
+        listOf(
+            listOf(buttonEventsList),
+            listOf(buttonEventsCreate),
+            listOf(buttonMain),
+        )
+    )
+
+    val keyboardEventDate = InlineKeyboardMarkup.create(
+        listOf(
+            listOf(buttonEventCreateDate),
+            listOf(buttonMain),
+        )
+    )
+    val keyboardWishList = InlineKeyboardMarkup.create(
+        listOf(
+            listOf(buttonWishListCreate),
+            listOf(buttonWishListList),
+            listOf(buttonWishListOther),
+            listOf(buttonMain),
+        )
+    )
+
+    val keyboardSecretSanta = InlineKeyboardMarkup.create(
+        listOf(
+            listOf(buttonSecretSantaRegister),
+            listOf(buttonSecretSantaList),
+            listOf(buttonSecretSantaStart),
+            listOf(buttonMain),
+        )
+    )
+
+    val keyboardSecretSantaInProgress = InlineKeyboardMarkup.create(
+        listOf(
+            listOf(buttonSecretSantaWho),
+            listOf(buttonMain),
         )
     )
 }

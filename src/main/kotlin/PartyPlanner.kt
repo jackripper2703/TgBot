@@ -8,13 +8,18 @@ import com.github.kotlintelegrambot.entities.ChatId
 import org.example.helpers.ConfigHelper
 
 fun main() {
-//     На времена, когда сделаю оповещение в группу
-//    val chatId = ConfigHelper.getProperty("chat_id")!!.toLong()
-    var secretSantaNow = false
-    var voteNow = false
 
-    var secretSantaInterface = if (secretSantaNow) {Keyboards.keyboard04} else {Keyboards.keyboard040}
-    var voteInterface = if (voteNow) {Keyboards.keyboard03} else {Keyboards.keyboard030}
+    val MOCK = "Пока еще не сделал, держу как макет"
+
+    val chatId = ConfigHelper.getProperty("chat_id")!!.toLong()
+
+    var secretSantaNow = false
+
+    var secretSantaInterface = if (secretSantaNow) {
+        Keyboards.keyboardSecretSantaInProgress
+    } else {
+        Keyboards.keyboardSecretSanta
+    }
 
     val bot = bot {
         token = ConfigHelper.getProperty("bot.token")
@@ -30,23 +35,20 @@ fun main() {
                             bot.sendMessage(
                                 chatId = ChatId.fromId(message.chat.id),
                                 text = "Выберите действие:",
-                                replyMarkup = Keyboards.keyboard00
+                                replyMarkup = Keyboards.keyboardMain
                             )
                         }
 
-                        "/secretSanta_restart" -> {
+                        "/secretSantaRestart" -> {
                             secretSantaNow = false
                             bot.sendMessage(
                                 chatId = ChatId.fromId(message.chat.id),
-                                text = "Выберите действие:",
-                                replyMarkup = Keyboards.keyboard00
-                            )
-                        }
-
-                        else -> {
-                            bot.sendMessage(
-                                chatId = ChatId.fromId(message.chat.id),
-                                text = "Нажмите /start, чтобы увидеть доступные команды."
+                                text = """
+                                    secretSantaNow = false
+                                    
+                                    Выберите действие:
+                                    """.trimIndent(),
+                                replyMarkup = Keyboards.keyboardMain
                             )
                         }
                     }
@@ -56,16 +58,16 @@ fun main() {
 
             callbackQuery {
                 val userId = callbackQuery.from.id
-
                 val messageId = callbackQuery.message?.messageId ?: return@callbackQuery
-                println("click")
+
                 when (callbackQuery.data) {
-                    "main" -> {
+
+                    "keyboardMain" -> {
                         bot.editMessageText(
                             chatId = ChatId.fromId(userId),
                             messageId = messageId,
                             text = "Выберите действие:",
-                            replyMarkup = Keyboards.keyboard00
+                            replyMarkup = Keyboards.keyboardMain
                         )
                     }
 
@@ -74,16 +76,75 @@ fun main() {
                             chatId = ChatId.fromId(userId),
                             messageId = messageId,
                             text = "Управление мероприятиями",
-                            replyMarkup = Keyboards.keyboard01
+                            replyMarkup = Keyboards.keyboardEvents
                         )
                     }
 
-                    "vote" -> {
+                    "eventsList" -> {
                         bot.editMessageText(
                             chatId = ChatId.fromId(userId),
                             messageId = messageId,
-                            text = "Голосование",
-                            replyMarkup = voteInterface
+                            text = MOCK,
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    "eventCreate" -> {
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = MOCK,
+                            replyMarkup = Keyboards.keyboardEventDate
+                        )
+                    }
+
+                    "eventDate" -> {
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = "Введите описание",
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    "wishList" -> { // Список желаний
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = "Раздел желаний",
+                            replyMarkup = Keyboards.keyboardWishList
+                        )
+                    }
+
+                    "wishListCreate" -> {
+                        // Создание нового желания
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = MOCK,
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    "wishListList" -> {
+                        // Вывод списка желаний
+                        // Должен быть уникальным для каждого участника
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = MOCK,
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    "wishListOther" -> {
+                        // Вывод участников
+                        // Переход отдельно в каждого для изучения его списка
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = MOCK,
+                            replyMarkup = Keyboards.keyboardBack
                         )
                     }
 
@@ -96,18 +157,54 @@ fun main() {
                         )
                     }
 
-                    "wishList" -> {
+                    "secretSantaRegister" -> {
                         bot.editMessageText(
                             chatId = ChatId.fromId(userId),
                             messageId = messageId,
-                            text = "Раздел желаний",
-                            replyMarkup = Keyboards.keyboard02
+                            text = MOCK, // Добавление в общий список
+                            replyMarkup = Keyboards.keyboardBack
                         )
                     }
 
+                    "secretSantaList" -> {
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = MOCK, // вывод общего списка участников
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    "secretSantaStart" -> {
+                        !secretSantaNow
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = "Вы являетесь Тайным Сантой для ${callbackQuery.from.username}",
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    "secretSantaWho" -> {
+                        bot.editMessageText(
+                            chatId = ChatId.fromId(userId),
+                            messageId = messageId,
+                            text = "Вы являетесь Тайным Сантой для ${callbackQuery.from.username}",
+                            replyMarkup = Keyboards.keyboardBack
+                        )
+                    }
+
+                    else -> {
+                        bot.sendMessage(
+                            chatId = ChatId.fromId(userId),
+                            text = "Неизвестная команда."
+                        )
+                    }
                 }
+
                 bot.answerCallbackQuery(callbackQuery.id)
             }
+
         }
     }
     bot.startPolling()
