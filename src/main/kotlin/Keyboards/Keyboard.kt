@@ -2,6 +2,7 @@ package org.example.Keyboards
 
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import org.example.models.EventStore
 
 object Keyboards {
 
@@ -98,6 +99,17 @@ object Keyboards {
         val buttons = (1..daysInMonth).map { day ->
             InlineKeyboardButton.CallbackData(text = "$day", callbackData = "selectDay:$year:$month:$day")
         }.chunked(7)  // Разбиваем по 7 кнопок в ряд (неделя)
+
+        return InlineKeyboardMarkup.create(buttons)
+    }
+
+    fun createEventsKeyboard(): InlineKeyboardMarkup {
+        val buttons = EventStore.events.map { event ->
+            InlineKeyboardButton.CallbackData(
+                text = event.date, // Текст кнопки - дата события
+                callbackData = "eventDate:${event.date}" // Данные, передаваемые в обработчик
+            )
+        }.chunked(2) // Разделяем кнопки по 2 в ряд (можете изменить на другое количество)
 
         return InlineKeyboardMarkup.create(buttons)
     }

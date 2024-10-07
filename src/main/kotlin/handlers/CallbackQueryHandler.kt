@@ -3,9 +3,12 @@ package org.example.handlers
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.handlers.HandleCallbackQuery
 import com.github.kotlintelegrambot.entities.ChatId
+import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
+import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import org.example.Keyboards.Keyboards
+import org.example.Keyboards.Keyboards.buttonMain
 import org.example.state.SecretSantaState
-import org.example.helpers.ConfigHelper
+import org.example.models.EventStore
 import org.example.state.EventState
 
 fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
@@ -73,7 +76,6 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
             )
         }
 
-
         data == "keyboardMain" -> {
             bot.editMessageText(
                 chatId = ChatId.fromId(userId),
@@ -98,19 +100,56 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
             bot.editMessageText(
                 chatId = ChatId.fromId(userId),
                 messageId = messageId,
-                text = MOCK,
-                replyMarkup = Keyboards.keyboardBack
+                text = if (EventStore.events.isNotEmpty()) {
+                    "Список мероприятий"
+                } else "Список мероприятий пуст... (",
+                replyMarkup = if (EventStore.events.isNotEmpty()) {
+                    Keyboards.createEventsKeyboard()
+                } else Keyboards.keyboardBack
             )
         }
 
-        data == "eventDate" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Введите описание",
-                replyMarkup = Keyboards.keyboardBack
-            )
+        data.startsWith("deleteEvent:") -> {
+            val eventDate = data.split(":")[1]
+            val eventToRemove = EventStore.events.find { it.date == eventDate }
+
+            if (eventToRemove != null) {
+                EventStore.events.remove(eventToRemove) // Удаляем событие
+                bot.sendMessage(
+                    chatId = ChatId.fromId(userId),
+                    text = "Событие на дату $eventDate удалено."
+                )
+            } else {
+                bot.sendMessage(
+                    chatId = ChatId.fromId(userId),
+                    text = "Не удалось удалить событие. Оно не найдено."
+                )
+            }
         }
+
+
+        data.startsWith("eventDate:") -> {
+            val eventDate = data.split(":")[1]
+            val event = EventStore.events.find { it.date == eventDate }
+
+            event?.let {
+                val messageText = "Дата события: ${it.date}\nОписание: ${it.description}"
+                bot.sendMessage(
+                    chatId = ChatId.fromId(userId),
+                    text = messageText,
+                    replyMarkup = InlineKeyboardMarkup.create(
+                        listOf(listOf(InlineKeyboardButton.CallbackData("Удалить событие", "deleteEvent:${it.date}")),
+                        listOf(buttonMain))
+                    )
+                )
+            } ?: run {
+                bot.sendMessage(
+                    chatId = ChatId.fromId(userId),
+                    text = "Событие не найдено."
+                )
+            }
+        }
+
 
         data == "wishList" -> { // Список желаний
             bot.editMessageText(
