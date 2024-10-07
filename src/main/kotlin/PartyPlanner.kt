@@ -4,7 +4,7 @@ import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import org.example.handlers.handleCallbackQuery
-import handlers.MessageHandler
+import org.example.handlers.MessageHandler
 import com.github.kotlintelegrambot.dispatcher.text
 import org.example.helpers.ConfigHelper
 

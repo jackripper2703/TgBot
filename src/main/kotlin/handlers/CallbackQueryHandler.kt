@@ -3,17 +3,16 @@ package org.example.handlers
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.handlers.HandleCallbackQuery
 import com.github.kotlintelegrambot.entities.ChatId
-import org.example.Keyboards
-import org.example.SecretSantaState
+import org.example.Keyboards.Keyboards
+import org.example.state.SecretSantaState
 import org.example.helpers.ConfigHelper
+import org.example.state.EventState
 
 fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
 
     val MOCK = "Пока еще не сделал, держу как макет"
 
-    val chatId = ConfigHelper.getProperty("chat_id")!!.toLong()
-
-    var secretSantaInterface = if (SecretSantaState.secretSantaNow) {
+    val secretSantaInterface = if (SecretSantaState.secretSantaNow) {
         Keyboards.keyboardSecretSantaInProgress
     } else {
         Keyboards.keyboardSecretSanta
@@ -27,6 +26,15 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
     println("[$username] Received callback query: $data")
 
     when {
+        data == "selectYear" -> {
+            bot.editMessageText(
+                chatId = ChatId.fromId(userId),
+                messageId = messageId,
+                text = "Выбери год:",
+                replyMarkup = Keyboards.createYearKeyboard()
+            )
+        }
+
         data.startsWith("selectYear") -> {
             val selectedYear = data.split(":")[1].toInt()
             bot.editMessageText(
@@ -52,12 +60,19 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
             val selectedYear = data.split(":")[1].toInt()
             val selectedMonth = data.split(":")[2].toInt()
             val selectedDay = data.split(":")[3].toInt()
+            val selectedDate = "$selectedDay:$selectedMonth:$selectedYear"
+
+            EventState.selectedDate = selectedDate
+            EventState.isWaitingForDescription = true
+
             bot.editMessageText(
                 chatId = ChatId.fromId(userId),
                 messageId = messageId,
-                text = "Дата выбрана: $selectedDay/$selectedMonth/$selectedYear"
+                text = "Дата выбрана: $selectedDate. Пожалуйста, введите описание мероприятия:",
+                replyMarkup = Keyboards.keyboardBack
             )
         }
+
 
         data == "keyboardMain" -> {
             bot.editMessageText(
@@ -66,6 +81,8 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
                 text = "Выберите действие:",
                 replyMarkup = Keyboards.keyboardMain
             )
+            EventState.isWaitingForDescription = false
+            EventState.selectedDate = null
         }
 
         data == "events" -> {

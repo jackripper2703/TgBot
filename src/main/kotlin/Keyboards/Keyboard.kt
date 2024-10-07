@@ -1,14 +1,9 @@
-package org.example
+package org.example.Keyboards
 
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 
 object Keyboards {
-    /*
-    1. Удаление будет реализовываться через сущности в списках
-    2. Нужно разобраться, как создаются динамичные списки, например список участников тайного санта
-    3. Голосовалка будет приходить с постом о мероприятии
-     */
 
     val buttonMain = InlineKeyboardButton.CallbackData("Главное меню", "keyboardMain")
 
@@ -76,10 +71,9 @@ object Keyboards {
 
     // Создаем клавиатуру для выбора года
     fun createYearKeyboard(): InlineKeyboardMarkup {
-        val buttons = (2024..2027).map { year ->
+        val buttons = (2024..2026).map { year ->
             InlineKeyboardButton.CallbackData(text = "$year", callbackData = "selectYear:$year")
-        }.chunked(3)  // Разбиваем по 3 кнопки в ряд
-
+        }.chunked(3)
         return InlineKeyboardMarkup.create(buttons)
     }
 
