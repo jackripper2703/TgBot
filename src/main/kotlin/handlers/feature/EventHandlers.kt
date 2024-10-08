@@ -4,6 +4,7 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import org.example.handlers.MessageHandler.chatId
 import org.example.handlers.editMessage
 import org.example.keyboard.Keyboard.buttonMain
 import org.example.keyboard.Keyboard.keyboardBack
@@ -17,7 +18,79 @@ import org.example.store.EventsStore.events
 
 fun handleEventQuery(bot: Bot, data: String, userId: Long, messageId: Long?) {
     when {
-        data == "selectYear" -> editMessage(
+
+        data == "events" -> editMessage(bot, userId, messageId, "Управление мероприятиями", keyboardEvents)
+
+        data == "eventsList" -> {
+            if (events.isNotEmpty()) {
+
+                bot.editMessageText(
+                    chatId = ChatId.fromId(userId),
+                    messageId = messageId,
+                    text = "Список мероприятий:\n",
+                    replyMarkup = createEventsKeyboard()
+                )
+            } else {
+                bot.editMessageText(
+                    chatId = ChatId.fromId(userId),
+                    messageId = messageId,
+                    text = "Список мероприятий пуст... (",
+                    replyMarkup = keyboardBack
+                )
+            }
+        }
+
+// Обработка нажатия кнопки с eventUUID
+        data.startsWith("eventUUID:") -> {
+            val eventUUID = data.split(":")[1] // Извлекаем UUID события
+            val eventIndex = events.indexOfFirst { it.id == eventUUID } // Ищем событие по UUID
+
+            if (eventIndex != -1) {
+                val messageText = """
+                    |Дата события: ${events[eventIndex].date}
+                    |Описание:
+                    |${events[eventIndex].description}
+                    """.trimMargin()
+
+                editMessage(
+                    bot, userId, messageId, messageText, InlineKeyboardMarkup.create(
+                        listOf(
+                            listOf(
+                                InlineKeyboardButton.CallbackData(
+                                    text = "Удалить событие", callbackData = "deleteEvent:${events[eventIndex].id}"
+                                ), buttonMain
+                            )
+                        )
+                    )
+                )
+            }
+        }
+
+        data.startsWith("deleteEvent:") -> {
+            val eventId = data.split(":")[1]
+            val eventToRemove = events.find { it.id == eventId }
+
+            bot.sendMessage(
+                chatId = ChatId.fromId(chatId),
+                text = """
+                    |Событие отменилось:
+                    |
+                    |${eventToRemove!!.name}
+                    |
+                    |Дата: ${eventToRemove!!.date}
+                    """.trimMargin()
+            )
+
+            if (eventToRemove != null) {
+                events.remove(eventToRemove) }
+            editMessage(bot, userId, messageId,
+                "Событие с ID $eventId удалено.",
+                keyboardBack
+                )
+
+        }
+
+        data == "eventCreate" -> editMessage(
             bot, userId, messageId, "Выбери год:", createYearKeyboard()
         )
 
@@ -27,7 +100,10 @@ fun handleEventQuery(bot: Bot, data: String, userId: Long, messageId: Long?) {
                 bot,
                 userId,
                 messageId,
-                "Выбран год: $selectedYear. Выберите месяц:",
+                """
+                |Выбран год: ${selectedYear}
+                |Выберите месяц:"
+                """.trimMargin(),
                 createMonthKeyboard(selectedYear)
             )
         }
@@ -56,72 +132,12 @@ fun handleEventQuery(bot: Bot, data: String, userId: Long, messageId: Long?) {
             EventState.isWaitingForDescription = true
 
             editMessage(
-                bot,
-                userId,
-                messageId,
-                "Дата выбрана: $selectedDate. Пожалуйста, введите описание мероприятия:",
-                keyboardBack
+                bot, userId, messageId, """
+                    |Дата выбрана: $selectedDate.
+                    |Пожалуйста, введите описание мероприятия:
+                    |!!!Первое слово будет названием!!!
+                """.trimMargin(), keyboardBack
             )
-        }
-
-        data == "events" -> editMessage(bot, userId, messageId, "Управление мероприятиями", keyboardEvents)
-
-        data == "eventsList" -> {
-            if (events.isNotEmpty()) {
-
-                bot.editMessageText(
-                    chatId = ChatId.fromId(userId),
-                    messageId = messageId,
-                    text = "Список мероприятий:\n",
-                    replyMarkup = createEventsKeyboard()
-                )
-            } else {
-                bot.editMessageText(
-                    chatId = ChatId.fromId(userId),
-                    messageId = messageId,
-                    text = "Список мероприятий пуст... (",
-                    replyMarkup = keyboardBack
-                )
-            }
-        }
-
-        data.startsWith("deleteEvent:") -> {
-            val eventId = data.split(":")[1]
-            val eventToRemove = events.find { it.id == eventId }
-
-            if (eventToRemove != null) {
-                events.remove(eventToRemove) // Удаляем событие по ID
-                bot.sendMessage(
-                    chatId = ChatId.fromId(userId),
-                    text = "Событие с ID $eventId удалено.",
-                    replyMarkup = keyboardBack
-                )
-            }
-        }
-
-        data.startsWith("eventDate:") -> {
-            val eventDate = data.split(":")[1]
-            val eventIndex = events.indexOfFirst { it.date == eventDate }
-
-            if (eventIndex != -1) {
-                val messageText =
-                    "Дата события: ${events[eventIndex].date}\nОписание: ${events[eventIndex].description}"
-
-                editMessage(
-                    bot, userId, messageId, messageText,
-                    InlineKeyboardMarkup.create(
-                        listOf(
-                            listOf(
-                                InlineKeyboardButton.CallbackData(
-                                    "Удалить событие",
-                                    "deleteEvent:${events[eventIndex].id}"
-                                )
-                            ),
-                            listOf(buttonMain)
-                        )
-                    )
-                )
-            }
         }
     }
 }

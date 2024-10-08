@@ -5,12 +5,13 @@ import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import org.example.keyboard.Keyboard.buttonMain
 import org.example.keyboard.Keyboard.createKeyboardFromRange
 import org.example.store.EventsStore
+import org.example.store.EventsStore.events
 
 object KeyboardEvent {
 
     // Мероприятия
     private val buttonEventsList = InlineKeyboardButton.CallbackData("Список мероприятий", "eventsList")
-    private val buttonEventsCreate = InlineKeyboardButton.CallbackData("Создать новое мероприятие", "selectYear")
+    private val buttonEventsCreate = InlineKeyboardButton.CallbackData("Создать новое мероприятие", "eventCreate")
 
     // Меню "Мероприятия"
     val keyboardEvents = InlineKeyboardMarkup.create(
@@ -39,15 +40,17 @@ object KeyboardEvent {
 
     // Генерация клавиатуры с кнопками для событий
     fun createEventsKeyboard(): InlineKeyboardMarkup {
-        val buttons = EventsStore.events.map { event ->
+        val buttons = events.map { event ->
             InlineKeyboardButton.CallbackData(
                 text = event.name,
-                callbackData = "eventId:${event.id}"
+                callbackData = "eventUUID:${event.id}"
             )
-        }.chunked(2)
+        }.map { listOf(it) }
 
-        return InlineKeyboardMarkup.create(buttons)
+        val buttonsFull = buttons + listOf(listOf(buttonMain))
+        return InlineKeyboardMarkup.create(buttonsFull)
     }
+
 
     // Определение количества дней в месяце
     fun getDaysInMonth(year: Int, month: Int): Int {

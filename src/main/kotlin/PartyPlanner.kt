@@ -11,11 +11,10 @@ import org.example.models.Event
 import org.example.store.EventsStore
 
 fun main() {
-
-    val selectedDate = "01:01:2024" // Например, выбранная дата
-    val description = "Описание мероприятия" // Вводимое описание
-
-    EventsStore.events.add(Event(date = selectedDate, description = description))
+    EventsStore.events.add(Event(date = "01:01:2024", description = "Кинотеатр мероприятия"))
+    EventsStore.events.add(Event(date = "01:02:2024", description = "Ресторан мероприятия"))
+    EventsStore.events.add(Event(date = "01:03:2024", description = "Музей мероприятия"))
+    EventsStore.events.add(Event(date = "01:04:2024", description = "Митап мероприятия"))
 
     val bot = bot {
         token = ConfigHelper.token

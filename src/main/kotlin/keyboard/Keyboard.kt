@@ -10,9 +10,9 @@ object Keyboard {
     // Общая кнопка возврата в главное меню
     val buttonMain = InlineKeyboardButton.CallbackData("Главное меню", "keyboardMain")
 
-    private val buttonEvents = InlineKeyboardButton.CallbackData("Мероприятия", "events")
-    private val buttonSecretSanta = InlineKeyboardButton.CallbackData("Тайный Санта", "secretSanta")
-    private val buttonWishList = InlineKeyboardButton.CallbackData("Желания", "wishList")
+    val buttonEvents = InlineKeyboardButton.CallbackData("Мероприятия", "events")
+    val buttonSecretSanta = InlineKeyboardButton.CallbackData("Тайный Санта", "secretSanta")
+    val buttonWishList = InlineKeyboardButton.CallbackData("Желания", "wishList")
 
     // Клавиатура с кнопкой "Главное меню"
     val keyboardBack = createSingleButtonKeyboard(buttonMain)
@@ -38,7 +38,7 @@ object Keyboard {
                 text = "$value",
                 callbackData = "$callbackPrefix:$value"
             )
-        }.chunked(if (range.count() > 12) 7 else 6)
+        }.chunked(if (range.count() == 12) 3 else 7)
 
         return InlineKeyboardMarkup.create(buttons)
     }
