@@ -8,12 +8,17 @@ import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import org.example.Keyboards.Keyboards
 import org.example.Keyboards.Keyboards.buttonMain
 import org.example.state.SecretSantaState
-import org.example.models.EventStore
+import org.example.store.EventsStore
 import org.example.state.EventState
+import org.example.state.EventState.resetEventState
 
 fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
 
     val MOCK = "Пока еще не сделал, держу как макет"
+    val userId = callbackQuery.from.id
+    val username = callbackQuery.from.username ?: "Unknown User"
+    val messageId = callbackQuery.message?.messageId
+    val data = callbackQuery.data
 
     val secretSantaInterface = if (SecretSantaState.secretSantaNow) {
         Keyboards.keyboardSecretSantaInProgress
@@ -21,116 +26,95 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
         Keyboards.keyboardSecretSanta
     }
 
-    val userId = callbackQuery.from.id
-    val username = callbackQuery.from.username ?: "Unknown User"
-    val messageId = callbackQuery.message?.messageId
-    val data = callbackQuery.data
-
     println("[$username] Received callback query: $data")
 
     when {
-        data == "selectYear" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Выбери год:",
-                replyMarkup = Keyboards.createYearKeyboard()
-            )
-        }
+        data == "selectYear" -> editMessage(
+            bot, userId, messageId,
+            "Выбери год:", Keyboards.createYearKeyboard()
+        )
 
         data.startsWith("selectYear") -> {
             val selectedYear = data.split(":")[1].toInt()
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Выбран год: $selectedYear. Выберите месяц:",
-                replyMarkup = Keyboards.createMonthKeyboard(selectedYear)
+            editMessage(
+                bot, userId, messageId,
+                "Выбран год: $selectedYear. Выберите месяц:",
+                Keyboards.createMonthKeyboard(selectedYear)
             )
         }
 
         data.startsWith("selectMonth") -> {
-            val selectedYear = data.split(":")[1].toInt()
-            val selectedMonth = data.split(":")[2].toInt()
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Выбран месяц: $selectedMonth. Выберите день:",
-                replyMarkup = Keyboards.createDayKeyboard(selectedYear, selectedMonth)
+            val (selectedYear, selectedMonth) = data.split(":").let { it[1].toInt() to it[2].toInt() }
+            editMessage(
+                bot, userId, messageId,
+                "Выбран месяц: $selectedMonth. Выберите день:",
+                Keyboards.createDayKeyboard(selectedYear, selectedMonth)
             )
         }
 
         data.startsWith("selectDay") -> {
-            val selectedYear = data.split(":")[1].toInt()
-            val selectedMonth = data.split(":")[2].toInt()
-            val selectedDay = data.split(":")[3].toInt()
+            val splitData = data.split(":")
+
+            val selectedYear = splitData[1].toInt()
+            val selectedMonth = splitData[2].toInt()
+            val selectedDay = splitData[3].toInt()
+
             val selectedDate = "$selectedDay:$selectedMonth:$selectedYear"
 
             EventState.selectedDate = selectedDate
             EventState.isWaitingForDescription = true
 
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Дата выбрана: $selectedDate. Пожалуйста, введите описание мероприятия:",
-                replyMarkup = Keyboards.keyboardBack
+            editMessage(
+                bot, userId, messageId,
+                "Дата выбрана: $selectedDate. Пожалуйста, введите описание мероприятия:",
+                Keyboards.keyboardBack
             )
         }
 
         data == "keyboardMain" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Выберите действие:",
-                replyMarkup = Keyboards.keyboardMain
-            )
-            EventState.isWaitingForDescription = false
-            EventState.selectedDate = null
+            editMessage(bot, userId, messageId, "Выберите действие:", Keyboards.keyboardMain)
+            resetEventState()
         }
 
-        data == "events" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Управление мероприятиями",
-                replyMarkup = Keyboards.keyboardEvents
-            )
-        }
+        data == "events" -> editMessage(bot, userId, messageId, "Управление мероприятиями", Keyboards.keyboardEvents)
 
         data == "eventsList" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = if (EventStore.events.isNotEmpty()) {
-                    "Список мероприятий"
-                } else "Список мероприятий пуст... (",
-                replyMarkup = if (EventStore.events.isNotEmpty()) {
-                    Keyboards.createEventsKeyboard()
-                } else Keyboards.keyboardBack
-            )
-        }
+            if (EventsStore.events.isNotEmpty()) {
 
-        data.startsWith("deleteEvent:") -> {
-            val eventDate = data.split(":")[1]
-            val eventToRemove = EventStore.events.find { it.date == eventDate }
-
-            if (eventToRemove != null) {
-                EventStore.events.remove(eventToRemove) // Удаляем событие
-                bot.sendMessage(
+                bot.editMessageText(
                     chatId = ChatId.fromId(userId),
-                    text = "Событие на дату $eventDate удалено."
+                    messageId = messageId,
+                    text = "Список мероприятий:\n",
+                    replyMarkup = Keyboards.createEventsKeyboard()
                 )
             } else {
-                bot.sendMessage(
+                bot.editMessageText(
                     chatId = ChatId.fromId(userId),
-                    text = "Не удалось удалить событие. Оно не найдено."
+                    messageId = messageId,
+                    text = "Список мероприятий пуст... (",
+                    replyMarkup = Keyboards.keyboardBack
                 )
             }
         }
 
 
+        data.startsWith("deleteEvent:") -> {
+            val eventId = data.split(":")[1]
+            val eventToRemove = EventsStore.events.find { it.id == eventId }
+
+            if (eventToRemove != null) {
+                EventsStore.events.remove(eventToRemove) // Удаляем событие по ID
+                bot.sendMessage(
+                    chatId = ChatId.fromId(userId),
+                    text = "Событие с ID $eventId удалено.",
+                    replyMarkup = Keyboards.keyboardBack
+                )
+            }
+        }
+
         data.startsWith("eventDate:") -> {
             val eventDate = data.split(":")[1]
-            val event = EventStore.events.find { it.date == eventDate }
+            val event = EventsStore.events.find { it.date == eventDate }
 
             event?.let {
                 val messageText = "Дата события: ${it.date}\nОписание: ${it.description}"
@@ -138,113 +122,61 @@ fun handleCallbackQuery(bot: Bot): HandleCallbackQuery = {
                     chatId = ChatId.fromId(userId),
                     text = messageText,
                     replyMarkup = InlineKeyboardMarkup.create(
-                        listOf(listOf(InlineKeyboardButton.CallbackData("Удалить событие", "deleteEvent:${it.date}")),
-                        listOf(buttonMain))
+                        listOf(
+                            listOf(InlineKeyboardButton.CallbackData("Удалить событие", "deleteEvent:${it.date}")),
+                            listOf(buttonMain ?: InlineKeyboardButton.CallbackData("Главное меню", "keyboardMain"))
+                        )
                     )
                 )
             } ?: run {
-                bot.sendMessage(
-                    chatId = ChatId.fromId(userId),
-                    text = "Событие не найдено."
-                )
+                bot.sendMessage(ChatId.fromId(userId), "Событие не найдено.")
             }
         }
 
+        data == "wishList" -> editMessage(bot, userId, messageId, "Раздел желаний", Keyboards.keyboardWishList)
 
-        data == "wishList" -> { // Список желаний
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Раздел желаний",
-                replyMarkup = Keyboards.keyboardWishList
-            )
-        }
+        data == "wishListCreate" -> editMessage(bot, userId, messageId, MOCK, Keyboards.keyboardBack)
 
-        data == "wishListCreate" -> {
-            // Создание нового желания
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = MOCK,
-                replyMarkup = Keyboards.keyboardBack
-            )
-        }
+        data == "wishListList" -> editMessage(bot, userId, messageId, MOCK, Keyboards.keyboardBack)
 
-        data == "wishListList" -> {
-            // Вывод списка желаний
-            // Должен быть уникальным для каждого участника
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = MOCK,
-                replyMarkup = Keyboards.keyboardBack
-            )
-        }
+        data == "wishListOther" -> editMessage(bot, userId, messageId, MOCK, Keyboards.keyboardBack)
 
-        data == "wishListOther" -> {
-            // Вывод участников
-            // Переход отдельно в каждого для изучения его списка
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = MOCK,
-                replyMarkup = Keyboards.keyboardBack
-            )
-        }
+        data == "secretSanta" -> editMessage(bot, userId, messageId, "Раздел Тайного Санты", secretSantaInterface)
 
-        data == "secretSanta" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Раздел Тайного Санты",
-                replyMarkup = secretSantaInterface
-            )
-        }
+        data == "secretSantaRegister" -> editMessage(bot, userId, messageId, MOCK, Keyboards.keyboardBack)
 
-        data == "secretSantaRegister" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = MOCK, // Добавление в общий список
-                replyMarkup = Keyboards.keyboardBack
-            )
-        }
-
-        data == "secretSantaList" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = MOCK, // вывод общего списка участников
-                replyMarkup = Keyboards.keyboardBack
-            )
-        }
+        data == "secretSantaList" -> editMessage(bot, userId, messageId, MOCK, Keyboards.keyboardBack)
 
         data == "secretSantaStart" -> {
             SecretSantaState.secretSantaNow = true
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Вы являетесь Тайным Сантой для $username",
-                replyMarkup = Keyboards.keyboardBack
-            )
+            editMessage(bot, userId, messageId, "Вы являетесь Тайным Сантой для $username", Keyboards.keyboardBack)
         }
 
-        data == "secretSantaWho" -> {
-            bot.editMessageText(
-                chatId = ChatId.fromId(userId),
-                messageId = messageId,
-                text = "Вы являетесь Тайным Сантой для $username",
-                replyMarkup = Keyboards.keyboardBack
-            )
-        }
+        data == "secretSantaWho" -> editMessage(
+            bot,
+            userId,
+            messageId,
+            "Вы являетесь Тайным Сантой для $username",
+            Keyboards.keyboardBack
+        )
 
-        else -> {
-            bot.sendMessage(
-                chatId = ChatId.fromId(userId),
-                text = "Неизвестная команда."
-            )
-        }
+        else -> bot.sendMessage(ChatId.fromId(userId), "Неизвестная команда.")
     }
 
     bot.answerCallbackQuery(callbackQuery.id)
+}
+
+private fun editMessage(
+    bot: Bot,
+    userId: Long,
+    messageId: Long?,
+    text: String,
+    keyboard: InlineKeyboardMarkup? = null
+) {
+    bot.editMessageText(
+        chatId = ChatId.fromId(userId),
+        messageId = messageId,
+        text = text,
+        replyMarkup = keyboard
+    )
 }
