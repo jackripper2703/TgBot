@@ -7,5 +7,5 @@ data class Event(
     val date: String,
     val description: String,
     val name: String = description.split(" ").firstOrNull() ?: "",
-    val participants: MutableList<String> = mutableListOf()
+    val participants: MutableList<User> = mutableListOf()
 )

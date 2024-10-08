@@ -3,20 +3,21 @@ package org.example.handlers
 import org.example.store.EventsStore
 import org.example.state.EventState
 import org.example.models.Event
-import org.example.Keyboards.Keyboards
 import org.example.state.SecretSantaState
 import org.example.models.User
-import org.example.store.UserStore // Импортируем UserStore
+import org.example.store.UsersStore
 
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Message
 import org.example.helpers.ConfigHelper
+import org.example.keyboard.Keyboard.keyboardMain
 
 object MessageHandler {
 
     // Получаем chat_id из конфигурации
-    private val chatId = ConfigHelper.getProperty("chat_id")?.toLongOrNull() ?: error("Chat ID is not configured properly.")
+    private val chatId =
+        ConfigHelper.getProperty("chat_id")?.toLongOrNull() ?: error("Chat ID is not configured properly.")
 
     // Обрабатываем текстовые сообщения
     fun handleTextMessage(bot: Bot, message: Message) {
@@ -44,15 +45,13 @@ object MessageHandler {
     private fun handleEventDescription(bot: Bot, message: Message) {
         val description = message.text ?: run {
             bot.sendMessage(
-                chatId = ChatId.fromId(message.chat.id),
-                text = "Ошибка: Описание мероприятия не может быть пустым."
+                chatId = ChatId.fromId(message.chat.id), text = "Ошибка: Описание мероприятия не может быть пустым."
             )
             return
         }
         val selectedDate = EventState.selectedDate ?: run {
             bot.sendMessage(
-                chatId = ChatId.fromId(message.chat.id),
-                text = "Ошибка: Не выбрана дата мероприятия."
+                chatId = ChatId.fromId(message.chat.id), text = "Ошибка: Не выбрана дата мероприятия."
             )
             return
         }
@@ -72,13 +71,12 @@ object MessageHandler {
         bot.sendMessage(
             chatId = ChatId.fromId(message.chat.id),
             text = "Описание мероприятия: \n\n\"$_description\" \n\nУспешно сохранено.\n\nВыберите действие:",
-            replyMarkup = Keyboards.keyboardMain // Здесь добавляем клавиатуру
+            replyMarkup = keyboardMain // Здесь добавляем клавиатуру
         )
 
         // Уведомляем группу о создании мероприятия
         bot.sendMessage(
-            chatId = ChatId.fromId(chatId),
-            text = "Создано новое мероприятие:\n\n $_description \n\nДата: $_date"
+            chatId = ChatId.fromId(chatId), text = "Создано новое мероприятие:\n\n $_description \n\nДата: $_date"
         )
     }
 
@@ -88,7 +86,8 @@ object MessageHandler {
             "/start" -> {
                 handleStartCommand(bot, message) // Вызов метода для обработки /start
             }
-            "/secretSantaRestart" -> restartSecretSanta(bot, message.chat.id)
+
+            "/secretSantaRestart" -> SecretSantaState.restartSecretSanta(bot, message.chat.id)
             else -> sendUnknownCommandResponse(bot, message.chat.id)
         }
     }
@@ -99,12 +98,12 @@ object MessageHandler {
         val username = message.from!!.username ?: "Unknown User"
 
         // Проверьте, существует ли пользователь уже
-        if (UserStore.users.none { it.userId == userId }) {
+        if (UsersStore.users.none { it.userId == userId }) {
             // Создание нового пользователя
             val newUser = User(userId = userId, username = username)
 
             // Добавление пользователя в UserStore
-            UserStore.users.add(newUser)
+            UsersStore.users.add(newUser)
 
             bot.sendMessage(
                 chatId = ChatId.fromId(message.chat.id), // Преобразуем Long в ChatId
@@ -126,17 +125,7 @@ object MessageHandler {
         bot.sendMessage(
             chatId = ChatId.fromId(chatId),
             text = "Выберите действие:",
-            replyMarkup = Keyboards.keyboardMain // Здесь добавляем клавиатуру
-        )
-    }
-
-    // Сброс состояния Тайного Санты
-    private fun restartSecretSanta(bot: Bot, chatId: Long) {
-        SecretSantaState.secretSantaNow = false
-        bot.sendMessage(
-            chatId = ChatId.fromId(chatId),
-            text = "Состояние Тайного Санты сброшено. Выберите действие:",
-            replyMarkup = Keyboards.keyboardMain
+            replyMarkup = keyboardMain // Здесь добавляем клавиатуру
         )
     }
 
@@ -145,7 +134,7 @@ object MessageHandler {
         bot.sendMessage(
             chatId = ChatId.fromId(chatId),
             text = "Неизвестная команда. Пожалуйста, выберите действие из меню.",
-            replyMarkup = Keyboards.keyboardMain
+            replyMarkup = keyboardMain
         )
     }
 }
